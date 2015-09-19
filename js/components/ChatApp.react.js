@@ -2,7 +2,11 @@ import React from 'react';
 import MessageSection from './MessageSection.react';
 import ThreadSection from './ThreadSection.react';
 import * as Actions from '../actions';
-import { threadsSource, currentMessagesSource } from '../store/store';
+import {
+  threadsSource,
+  currentMessagesSource,
+  unreadCountSouce
+} from '../store/store';
 
 export default class ChatApp extends React.Component {
 
@@ -10,7 +14,8 @@ export default class ChatApp extends React.Component {
     super(props);
     this.state = {
       threads: [],
-      messages: []
+      messages: [],
+      unreadCount: null
     };
   }
 
@@ -19,17 +24,23 @@ export default class ChatApp extends React.Component {
       .subscribeOnNext(threads => this.setState({threads}));
     this.disposable2 = currentMessagesSource
       .subscribeOnNext(messages => this.setState({messages}));
+    this.disposable3 = unreadCountSouce
+      .subscribeOnNext(unreadCount => this.setState({unreadCount}));
   }
 
   componentWillUnmount() {
     this.disposable1.dispose();
     this.disposable2.dispose();
+    this.disposable3.dispose();
   }
 
   render() {
     return (
       <div className="chatapp">
-        <ThreadSection threads={this.state.threads} />
+        <ThreadSection
+          threads={this.state.threads}
+          unreadCount={this.state.unreadCount}
+        />
         <MessageSection messages={this.state.messages} />
       </div>
     );

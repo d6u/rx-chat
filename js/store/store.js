@@ -1,4 +1,4 @@
-import Rx from 'rx';
+import { Observable } from 'rx';
 import last from 'lodash/array/last';
 import groupBy from 'lodash/collection/groupBy';
 import * as ChatExampleDataServer from '../ChatExampleDataServer';
@@ -6,13 +6,12 @@ import * as Actions from '../actions';
 import * as ChatMessageUtils from '../utils/ChatMessageUtils';
 
 let messagesSource = Actions.requestMessages
-  .flatMap(() => Rx.Observable.fromCallback(ChatExampleDataServer.getMessages)())
+  .flatMap(() => Observable.fromCallback(ChatExampleDataServer.getMessages)())
   .map(rawMessages => rawMessages.map(ChatMessageUtils.convertRawMessage));
 
-let source = Rx.Observable.combineLatest(
-    messagesSource,
-    Actions.clickThread.startWith(null)
-  )
+let source = Observable.combineLatest(
+  messagesSource,
+  Actions.clickThread.startWith(null))
   .map(([messages, currentThreadID]) => {
     if (currentThreadID === null) {
       currentThreadID = last(messages).threadID;
@@ -48,3 +47,6 @@ export let threadsSource = source
       };
     });
   });
+
+export let unreadCountSouce = threadsSource
+  .map(ts => ts.reduce((c, t) => c + (t.lastMessage.isRead ? 0 : 1), 0));

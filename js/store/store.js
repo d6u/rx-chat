@@ -1,47 +1,54 @@
 import { Observable } from 'rx';
-import last from 'lodash/array/last';
-import groupBy from 'lodash/collection/groupBy';
-import findIndex from 'lodash/array/findIndex';
-import ary from 'lodash/function/ary';
-import * as ChatExampleDataServer from '../ChatExampleDataServer';
-import * as Actions from '../actions';
-import * as ChatMessageUtils from '../utils/ChatMessageUtils';
+import {
+  last, nAry, groupBy, findIndex, propEq, map, apply, props, compose, filter,
+  prop, keys, merge, unary, update, reduce, of
+} from 'ramda';
+import { getMessages, postMessage } from '../ChatExampleDataServer';
+import { requestMessages, createMessage, clickThread } from '../actions';
+import {
+  getCreatedMessageData,
+  convertRawMessage
+} from '../utils/ChatMessageUtils';
 
-let messagesSource = Actions.requestMessages
-  .flatMap(ary(Observable.fromCallback(ChatExampleDataServer.getMessages), 0))
-  .map(rawMessages => rawMessages.map(ChatMessageUtils.convertRawMessage));
+let messagesSource = requestMessages
+  .flatMap(nAry(0, Observable.fromCallback(getMessages)))
+  .map(map(convertRawMessage));
 
-let newMessageSource = Actions.createMessage
-  .map(({text, threadID}) => ChatMessageUtils.getCreatedMessageData(text, threadID))
+let newMessageSource = createMessage
+  .map(props(['text', 'threadID']))
+  .map(apply(getCreatedMessageData))
   .flatMap(message => {
-    return Observable.fromCallback(ChatExampleDataServer.postMessage)(message)
-      .map(rawMessage => {
-        let newMessage = ChatMessageUtils.convertRawMessage(rawMessage);
-        newMessage.tmp_id = message.tmp_id;
-        newMessage.isRead = true;
-        return newMessage;
-      })
-      .startWith(message);
+    return Observable.fromCallback(postMessage)(message)
+      .map(convertRawMessage)
+      .map(merge({
+        tempID: message.tempID,
+        isRead: true
+      }))
+      .startWith(message)
+      .map(of);
   });
 
 let allMessagesSouce =
-  Observable.combineLatest(messagesSource, newMessageSource.startWith(null))
-  .scan((allMessages, [messages, newMessage]) => {
-    if (!newMessage) {
+  Observable.merge(messagesSource, newMessageSource)
+  .scan((allMessages, messages) => {
+    if (messages.length > 1) {
       return allMessages.concat(messages);
     }
 
+    let newMessage = messages[0];
+
     if (newMessage.id == null) {
       return allMessages.concat([newMessage]);
-    } else {
-      let i = findIndex(allMessages, {tmp_id: newMessage.tmp_id});
-      allMessages[i] = newMessage;
-      return allMessages;
     }
-  }, []);
+
+    return update(
+      findIndex(propEq('tempID', newMessage.tempID), allMessages),
+      newMessage,
+      allMessages);
+  });
 
 let source =
-  Observable.combineLatest(allMessagesSouce, Actions.clickThread.startWith(null))
+  Observable.combineLatest(allMessagesSouce, clickThread.startWith(null))
   .map(([messages, currentThreadID]) => {
     if (currentThreadID === null) {
       currentThreadID = last(messages).threadID;
@@ -59,13 +66,13 @@ export let currentMessagesSource = source
         message.isRead = true;
       }
     }
-    return messages.filter(message => message.threadID === currentThreadID);
+    return filter(propEq('threadID', currentThreadID), messages);
   });
 
 export let threadsSource = source
   .map(([messages, currentThreadID]) => {
-    let dict = groupBy(messages, 'threadID');
-    return Object.keys(dict).map(threadID => {
+    let dict = groupBy(prop('threadID'), messages);
+    return keys(dict).map(threadID => {
       let threadMessages = dict[threadID];
       let lastMessage = last(threadMessages);
       return {
@@ -79,4 +86,4 @@ export let threadsSource = source
   });
 
 export let unreadCountSouce = threadsSource
-  .map(ts => ts.reduce((c, t) => c + (t.lastMessage.isRead ? 0 : 1), 0));
+  .map(reduce((count, thread) => count + !thread.lastMessage.isRead, 0));

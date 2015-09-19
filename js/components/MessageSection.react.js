@@ -5,7 +5,7 @@ import MessageListItem from './MessageListItem.react';
 function getMessageListItem(message) {
   return (
     <MessageListItem
-      key={message.id || message.tmp_id}
+      key={message.id || message.tempID}
       message={message}
     />
   );

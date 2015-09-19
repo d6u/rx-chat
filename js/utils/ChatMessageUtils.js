@@ -9,7 +9,7 @@ export function convertRawMessage(rawMessage, currentThreadID) {
 export function getCreatedMessageData(text, currentThreadID) {
   var timestamp = Date.now();
   return {
-    tmp_id: 'm_' + timestamp,
+    tempID: 'm_' + timestamp,
     threadID: currentThreadID,
     authorName: 'Bill', // hard coded for the example
     date: new Date(timestamp),

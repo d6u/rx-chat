@@ -1,8 +1,8 @@
-import * as Actions from '../actions';
-import React, { PropTypes } from 'react';
+import React, { Component, PropTypes } from 'react';
 import classNames from 'classnames';
+import * as Actions from '../actions';
 
-class ThreadListItem extends React.Component {
+class ThreadListItem extends Component {
 
   render() {
     let thread = this.props.thread;
@@ -26,13 +26,13 @@ class ThreadListItem extends React.Component {
   }
 
   _onClick() {
-    Actions.clickThread(this.props.thread.id);
+    Actions.clickThread.onNext(this.props.thread.id);
   }
 
 };
 
 ThreadListItem.propTypes = {
-  thread: PropTypes.object,
+  thread: PropTypes.object.isRequired
 };
 
 export default ThreadListItem;

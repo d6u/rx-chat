@@ -1,9 +1,9 @@
-import React, { PropTypes } from 'react';
+import React, { Component, PropTypes } from 'react';
 import * as Actions from '../actions';
 
 let ENTER_KEY_CODE = 13;
 
-class MessageComposer extends React.Component {
+class MessageComposer extends Component {
 
   constructor(props) {
     super(props);
@@ -16,8 +16,8 @@ class MessageComposer extends React.Component {
         className="message-composer"
         name="message"
         value={this.state.text}
-        onChange={this._onChange.bind(this)}
-        onKeyDown={this._onKeyDown.bind(this)}
+        onChange={::this._onChange}
+        onKeyDown={::this._onKeyDown}
       />
     );
   }
@@ -31,7 +31,10 @@ class MessageComposer extends React.Component {
       event.preventDefault();
       let text = this.state.text.trim();
       if (text) {
-        Actions.createMessage(text, this.props.threadID);
+        Actions.createMessage.onNext({
+          text,
+          threadID: this.props.threadID
+        });
       }
       this.setState({text: ''});
     }

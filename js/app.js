@@ -3,7 +3,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import ChatApp from './components/ChatApp.react';
+import './store/store';
 import * as Actions from './actions';
+
+Actions.requestMessages.onNext();
 
 ReactDOM.render(
   <ChatApp />,

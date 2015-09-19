@@ -19,7 +19,6 @@ export default class ChatApp extends React.Component {
       .subscribeOnNext(threads => this.setState({threads}));
     this.disposable2 = currentMessagesSource
       .subscribeOnNext(messages => this.setState({messages}));
-    Actions.requestMessages.onNext();
   }
 
   componentWillUnmount() {

@@ -1,24 +1,27 @@
 import Rx from 'rx';
 import last from 'lodash/array/last';
 import groupBy from 'lodash/collection/groupBy';
-import { getMessages, postMessage } from '../ChatExampleDataServer';
-import { clickThread, createMessage, requestMessages } from '../actions';
-import { convertRawMessage } from '../utils/ChatMessageUtils';
+import * as ChatExampleDataServer from '../ChatExampleDataServer';
+import * as Actions from '../actions';
+import * as ChatMessageUtils from '../utils/ChatMessageUtils';
 
-let messagesSource = requestMessages
-  .flatMap(() => Rx.Observable.fromCallback(getMessages)())
-  .map(rawMessages => rawMessages.map(convertRawMessage));
+let messagesSource = Actions.requestMessages
+  .flatMap(() => Rx.Observable.fromCallback(ChatExampleDataServer.getMessages)())
+  .map(rawMessages => rawMessages.map(ChatMessageUtils.convertRawMessage));
 
 let source = Rx.Observable.combineLatest(
     messagesSource,
-    clickThread.startWith(null)
+    Actions.clickThread.startWith(null)
   )
   .map(([messages, currentThreadID]) => {
     if (currentThreadID === null) {
       currentThreadID = last(messages).threadID;
     }
     return [messages, currentThreadID];
-  });
+  })
+  .replay(null, 1);
+
+source.connect();
 
 export let currentMessagesSource = source
   .map(([messages, currentThreadID]) => {
@@ -28,8 +31,7 @@ export let currentMessagesSource = source
       }
     }
     return messages.filter(message => message.threadID === currentThreadID);
-  })
-  .replay(s => s, 1);
+  });
 
 export let threadsSource = source
   .map(([messages, currentThreadID]) => {
@@ -45,5 +47,4 @@ export let threadsSource = source
         isActive: threadID === currentThreadID
       };
     });
-  })
-  .replay(s => s, 1);
+  });

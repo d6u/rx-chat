@@ -11,7 +11,7 @@ class ThreadListItem extends React.Component {
       <li
         className={classNames({
           'thread-list-item': true,
-          'active': thread.id === this.props.currentThreadID
+          'active': thread.isActive
         })}
         onClick={this._onClick.bind(this)}>
         <h5 className="thread-name">{thread.name}</h5>
@@ -33,7 +33,6 @@ class ThreadListItem extends React.Component {
 
 ThreadListItem.propTypes = {
   thread: PropTypes.object,
-  currentThreadID: PropTypes.string
 };
 
 export default ThreadListItem;
